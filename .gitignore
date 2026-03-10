@@ -1,0 +1,35 @@
+# Secretos y variables de entorno
+.env
+.env.local
+.env.*.local
+secrets/
+!secrets/.gitkeep
+
+# Datos de host generados en runtime
+/srv/
+
+# Certificados y claves
+*.pem
+*.key
+*.crt
+*.p12
+acme.json
+
+# Editores e IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+logs/
+
+# Claude Code internals
+.claude/
