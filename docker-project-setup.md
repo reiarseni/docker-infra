@@ -332,6 +332,13 @@ APP_SECRET_KEY=cambia_esto_ya_minimo_32_caracteres
 
 # ── Rutas host ───────────────────────────────────────────────────
 DATA_BASE_PATH=/srv/appdata/${PROJECT_NAME}
+
+# ── Backup ────────────────────────────────────────────────────────
+# Configurar ejecutando /docker-backup-setup después de este setup
+BACKUP_RCLONE_REMOTE=CHANGE_ME        # ej: s3-aws:mi-bucket/backups
+BACKUP_RETENTION_DAILY=7
+BACKUP_RETENTION_WEEKLY=30
+BACKUP_RETENTION_MONTHLY=365
 ```
 
 Generar `.env.example` (igual que `.env` pero con valores de ejemplo, sin secretos reales):
@@ -607,7 +614,7 @@ CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--workers", "2
 ## Makefile
 
 ```makefile
-.PHONY: help setup dev prod build deploy logs shell db-shell db-backup stop clean
+.PHONY: help setup dev prod build deploy logs shell db-shell db-backup backup backup-dry backup-list restore restore-remote restart stop clean
 
 help:         ## Muestra este menú
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -648,6 +655,29 @@ db-backup:    ## Dump SQL al host
 	  pg_dump -U $$POSTGRES_USER $$POSTGRES_DB \
 	  > /srv/appdata/$$PROJECT_NAME/backups/backup_$$(date +%Y%m%d_%H%M%S).sql \
 	  && echo "✓ Backup en /srv/appdata/$$PROJECT_NAME/backups/"
+
+backup:       ## Backup: dump SQL + uploads → remote rclone (ver /docker-backup-setup)
+	bash docker/scripts/backup.sh
+
+backup-dry:   ## Simular backup sin escribir ni subir archivos
+	bash docker/scripts/backup.sh --dry-run
+
+backup-list:  ## Listar backups disponibles (local y remote)
+	@echo "── Local (daily) ────────────────────────────────────────"
+	@ls -lht /srv/appdata/$$PROJECT_NAME/backups/daily/ 2>/dev/null | head -15 || echo "  (vacío)"
+	@echo ""
+	@echo "── Remote ───────────────────────────────────────────────"
+	@set -a; . .env; set +a; \
+	rclone ls $$BACKUP_RCLONE_REMOTE/$$PROJECT_NAME/daily/ 2>/dev/null | sort -r | head -20 || echo "  (sin remote configurado)"
+
+restore:      ## Restaurar desde backup LOCAL (interactivo, con pre-backup)
+	bash docker/scripts/restore.sh
+
+restore-remote: ## Descargar backup del remote y restaurar (interactivo)
+	bash docker/scripts/restore.sh --from-remote
+
+restart:      ## Reiniciar todos los servicios sin recrear
+	docker compose restart
 
 stop:         ## Apaga contenedores (datos seguros en host)
 	docker compose down
@@ -794,3 +824,4 @@ make clean && make prod                 # reset completo (datos intactos)
 8. `docker inspect <nginx>` → conectado a redes `proxy` e `internal`
 9. `docker inspect <db>` → conectado SOLO a red `internal` (no expuesto)
 10. `docker/README.docker.md` tiene URLs reales con dominios `.localhost` del proyecto
+11. `make backup-dry` — simula backup sin errores (ejecutar después de `/docker-backup-setup`)
