@@ -11,6 +11,7 @@ This repository contains **slash command documentation** for a reusable Docker i
 - `docker-traefik-setup.md` — Global reverse proxy (runs once per machine)
 - `docker-db-shared-setup.md` — Shared PostgreSQL + pgAdmin (runs once per machine)
 - `docker-project-setup.md` — Per-project Docker setup template
+- `docker-backup-setup.md` — Backup cron (S3/rsync via rclone) + guided restore (runs once per project)
 
 ## Architecture Model
 
@@ -70,7 +71,7 @@ docker/
 
 ## Makefile Interface (Standard Commands)
 
-Every project Makefile exposes: `setup`, `dev`, `prod`, `build`, `deploy`, `logs`, `shell`, `db-shell`, `db-backup`, `stop`, `clean`.
+Every project Makefile exposes: `setup`, `dev`, `prod`, `build`, `deploy`, `logs`, `shell`, `db-shell`, `db-backup`, `backup`, `backup-dry`, `backup-list`, `restore`, `restore-remote`, `restart`, `stop`, `clean`.
 
 ## Stack Differences
 
