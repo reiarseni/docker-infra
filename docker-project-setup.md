@@ -825,3 +825,96 @@ make clean && make prod                 # reset completo (datos intactos)
 9. `docker inspect <db>` → conectado SOLO a red `internal` (no expuesto)
 10. `docker/README.docker.md` tiene URLs reales con dominios `.localhost` del proyecto
 11. `make backup-dry` — simula backup sin errores (ejecutar después de `/docker-backup-setup`)
+
+---
+
+## COMMIT INICIAL — obligatorio al terminar
+
+Todos los archivos generados son artefactos del proyecto y deben vivir en git.
+Ejecutar en orden después de que el checklist pase:
+
+### 1. Crear `.gitignore` del proyecto
+
+```gitignore
+# Variables de entorno — nunca al repo
+.env
+.env.local
+.env.*.local
+
+# Secretos generados en runtime
+docker/secrets/*
+!docker/secrets/.gitkeep
+
+# Datos del host (bind mounts — viven en /srv/, no en git)
+/srv/
+
+# Dependencias y caché
+node_modules/
+vendor/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+.next/
+
+# Logs
+*.log
+logs/
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*~
+
+# macOS
+.DS_Store
+```
+
+### 2. Inicializar git y hacer el commit inicial
+
+Si el proyecto ya tiene git inicializado, saltar el `git init`.
+
+```bash
+git init
+git branch -m main
+
+git add \
+  .gitignore \
+  .env.example \
+  .dockerignore \
+  compose.yaml \
+  Makefile \
+  docker/Dockerfile \
+  docker/nginx/nginx.development.conf \
+  docker/nginx/nginx.production.conf \
+  docker/scripts/init-host-dirs.sh \
+  docker/scripts/init-secrets.sh \
+  docker/secrets/.gitkeep \
+  docker/README.docker.md
+
+git commit -m "feat: scaffolding Docker inicial
+
+Infraestructura Docker completa para ${PROJECT_NAME}.
+
+Stack: [detectado — ej: FastAPI · PostgreSQL · Redis · nginx]
+Entorno: desarrollo (compose watch) y producción (multi-stage build)
+
+Incluye:
+- compose.yaml con perfiles dev/prod y compose watch
+- Dockerfile multi-stage: base → development → production
+- nginx.development.conf y nginx.production.conf (HSTS, gzip, rate-limit)
+- Makefile con interfaz estándar (setup, dev, prod, deploy, backup…)
+- Scripts init-host-dirs.sh e init-secrets.sh
+- .env.example como fuente de verdad de variables
+
+Redes: proxy (Traefik) · db-shared (PostgreSQL compartido) · internal
+Datos: bind mounts a /srv/appdata/${PROJECT_NAME}/ — fuera de git, seguros."
+```
+
+> **Nota:** `.env` con valores reales NUNCA va al commit. Solo `.env.example`.

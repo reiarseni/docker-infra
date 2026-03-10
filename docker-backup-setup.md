@@ -679,6 +679,41 @@ curl https://tudominio.com/health
 
 ---
 
+## COMMIT — obligatorio al terminar
+
+Los scripts de backup y restore son artefactos del proyecto y deben vivir en git.
+El `.gitignore` del proyecto ya excluye `/srv/` y `docker/secrets/*`, por lo que
+estos scripts se trackean sin riesgo.
+
+```bash
+git add \
+  docker/scripts/backup.sh \
+  docker/scripts/restore.sh \
+  .env.example \
+  Makefile
+
+git commit -m "feat: añadir backup automatizado cron → rclone + restore guiado
+
+Integra backup periódico y procedimiento de restore al proyecto.
+
+Herramienta: rclone — soporta S3 (AWS · Wasabi · B2 · MinIO) y SFTP/rsync
+sin cambiar una línea de los scripts.
+
+Scripts:
+- docker/scripts/backup.sh  — dump PostgreSQL + tar uploads → rclone;
+                               retención GFG 7d/4w/12m local y en remote
+- docker/scripts/restore.sh — restore guiado con pre-backup automático,
+                               confirmación explícita y soporte --from-remote
+
+Cron: 0 2 * * * en el host (ver crontab -l)
+Remote configurado: \${BACKUP_RCLONE_REMOTE} (ver .env.example)"
+```
+
+> **Nunca** commitear `.env` con el valor real de `BACKUP_RCLONE_REMOTE` ni credenciales
+> de rclone (`~/.config/rclone/rclone.conf` vive solo en el host, fuera del repo).
+
+---
+
 ## VALIDACIÓN
 
 1. `rclone listremotes` — el remote del proyecto aparece listado
@@ -688,3 +723,4 @@ curl https://tudominio.com/health
 5. `make restore` — lista backups locales, pide confirmación, restaura
 6. `crontab -l` — la línea del cron aparece con la ruta correcta al proyecto
 7. `/srv/appdata/${PROJECT_NAME}/logs/backup.log` — log generado tras el primer cron
+8. `git log --oneline` — commit de backup visible en el historial del proyecto
